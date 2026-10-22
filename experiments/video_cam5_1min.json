@@ -1,0 +1,89 @@
+{
+  "video": "D:\\OneDrive\\Desktop\\Учеба\\4 курс\\НИРС + ВКР\\TrafficPrediction\\..\\AIC21_Track1_Vehicle_Counting\\counting_gt_sample\\counting_example_cam_5_1min.mp4",
+  "frames": 600,
+  "fps": 10.0,
+  "tracks": 184,
+  "counted_vehicles": 38,
+  "segment_id": 1,
+  "errors": {
+    "per_movement": [
+      {
+        "movement_id": 1,
+        "predicted": 1,
+        "ground_truth": 1,
+        "error": 0
+      },
+      {
+        "movement_id": 2,
+        "predicted": 20,
+        "ground_truth": 5,
+        "error": 15
+      },
+      {
+        "movement_id": 3,
+        "predicted": 5,
+        "ground_truth": 13,
+        "error": -8
+      },
+      {
+        "movement_id": 4,
+        "predicted": 3,
+        "ground_truth": 10,
+        "error": -7
+      },
+      {
+        "movement_id": 5,
+        "predicted": 0,
+        "ground_truth": 25,
+        "error": -25
+      },
+      {
+        "movement_id": 6,
+        "predicted": 1,
+        "ground_truth": 0,
+        "error": 1
+      },
+      {
+        "movement_id": 7,
+        "predicted": 4,
+        "ground_truth": 1,
+        "error": 3
+      },
+      {
+        "movement_id": 8,
+        "predicted": 0,
+        "ground_truth": 0,
+        "error": 0
+      },
+      {
+        "movement_id": 9,
+        "predicted": 0,
+        "ground_truth": 0,
+        "error": 0
+      },
+      {
+        "movement_id": 10,
+        "predicted": 0,
+        "ground_truth": 2,
+        "error": -2
+      },
+      {
+        "movement_id": 11,
+        "predicted": 4,
+        "ground_truth": 38,
+        "error": -34
+      },
+      {
+        "movement_id": 12,
+        "predicted": 0,
+        "ground_truth": 1,
+        "error": -1
+      }
+    ],
+    "mae": 8.0,
+    "rmse": 13.335416503931677,
+    "predicted_total": 38,
+    "ground_truth_total": 96,
+    "total_absolute_error": 58
+  }
+}

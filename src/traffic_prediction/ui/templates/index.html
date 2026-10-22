@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Прогноз загруженности</title>
+  <style>
+    :root { color-scheme: light; --ink: #1c1915; --muted: #5c564c; --line: #e4ddd2; --paper: #f7f3ec; --card: #fffdf9; --accent: #9a3412; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 16px/1.45 "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); }
+    header { padding: 28px 8vw 8px; }
+    h1 { font-size: 28px; font-weight: 650; margin: 0 0 6px; }
+    p.lead { margin: 0; color: var(--muted); max-width: 68ch; }
+    main { display: grid; gap: 16px; padding: 20px 8vw 48px; grid-template-columns: 1.2fr 0.8fr; }
+    section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    h2 { font-size: 16px; margin: 0 0 12px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+    input, select, button { font: inherit; }
+    input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+    button { margin-top: 12px; background: var(--accent); color: white; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+    button.secondary { background: #44403c; }
+    svg { width: 100%; height: 180px; display: block; }
+    .meta { color: var(--muted); font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+    #forecast { margin-top: 12px; }
+    .levels { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { border-radius: 999px; padding: 2px 8px; background: #f5f5f4; }
+    .chip.free { background: #dcfce7; }
+    .chip.moderate { background: #fef3c7; }
+    .chip.congested { background: #fee2e2; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; } header { padding: 20px 16px 0; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Прогноз загруженности участков</h1>
+    <p class="lead">Видео даёт интенсивность на перекрёстке, графовая модель оценивает скорость на горизонтах 15, 30 и 60 минут с учётом календаря и погоды.</p>
+    <p class="meta">{{ now }} · модель {{ "загружена" if model_ready else "не обучена" }}</p>
+  </header>
+  <main>
+    <section>
+      <h2>Ряд наблюдений</h2>
+      {% if selected %}
+        <p class="meta">{{ selected.name }} · {{ selected.source }} · свободный поток {{ "%.1f"|format(selected.free_flow or 0) }}</p>
+        <svg viewBox="0 0 640 180" role="img" aria-label="График скорости или интенсивности">
+          <polyline fill="none" stroke="#9a3412" stroke-width="2" points="{{ chart }}"></polyline>
+        </svg>
+        <table>
+          <thead><tr><th>Время</th><th>Скорость</th><th>Интенсивность</th></tr></thead>
+          <tbody>
+          {% for row in series[-8:] %}
+            <tr>
+              <td>{{ row.ts.strftime("%d.%m %H:%M") }}</td>
+              <td>{{ "%.1f"|format(row.speed) if row.speed is not none else "—" }}</td>
+              <td>{{ "%.0f"|format(row.volume) if row.volume is not none else "—" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>Наблюдений пока нет. Обучите модель или обработайте ролик.</p>
+      {% endif %}
+    </section>
+    <section>
+      <h2>Прогноз</h2>
+      <form id="forecast-form">
+        <label for="segment">Участок</label>
+        <select id="segment" name="segment_id">
+          {% for segment in segments %}
+            <option value="{{ segment.id }}">{{ segment.name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" {% if not model_ready %}disabled{% endif %}>Построить прогноз</button>
+      </form>
+      <div id="forecast"></div>
+      <h2 style="margin-top:22px">Видео</h2>
+      <form id="video-form">
+        <label for="video_path">Путь к ролику</label>
+        <input id="video_path" name="video_path" value="">
+        <label for="camera_name">Камера</label>
+        <input id="camera_name" name="camera_name" value="cam_5">
+        <label for="max_frames">Лимит кадров, 0 — весь ролик</label>
+        <input id="max_frames" name="max_frames" type="number" value="0">
+        <button class="secondary" type="submit">Обработать</button>
+      </form>
+      <p id="video-result" class="meta"></p>
+      {% if jobs %}
+        <p class="meta">Последнее задание: {{ jobs[0].status }}, кадров {{ jobs[0].frames or 0 }}, ТС {{ jobs[0].counted_vehicles or 0 }}</p>
+      {% endif %}
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById("forecast-form");
+    const box = document.getElementById("forecast");
+    const names = { free: "свободно", moderate: "умеренно", congested: "затор", unknown: "нет оценки" };
+    if (form) {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const id = document.getElementById("segment").value;
+        box.textContent = "Считаем…";
+        const response = await fetch("/forecast/" + id, { method: "POST" });
+        const payload = await response.json();
+        if (!response.ok) {
+          box.textContent = payload.error || "Ошибка прогноза";
+          return;
+        }
+        box.innerHTML = "<div class='levels'>" + payload.forecasts.map((row) =>
+          `<span class="chip ${row.congestion_level}">${row.horizon_min} мин · ${row.predicted_speed} · ${names[row.congestion_level] || row.congestion_level}</span>`
+        ).join("") + "</div>";
+      });
+    }
+    const videoForm = document.getElementById("video-form");
+    if (videoForm) {
+      videoForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const result = document.getElementById("video-result");
+        result.textContent = "Обрабатываем ролик…";
+        const body = new FormData(videoForm);
+        const response = await fetch("/videos/process", { method: "POST", body });
+        const payload = await response.json();
+        result.textContent = response.ok
+          ? `Кадров ${payload.frames}, транспортных средств ${payload.counted_vehicles}`
+          : (payload.error || "Ошибка обработки");
+      });
+    }
+  </script>
+</body>
+</html>

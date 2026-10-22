@@ -1,0 +1,7 @@
+{
+  "batches": 20,
+  "batch_size": 8,
+  "nodes": 32,
+  "seconds": 0.05030179999994289,
+  "ms_per_batch": 2.5150899999971443
+}

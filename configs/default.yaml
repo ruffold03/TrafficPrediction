@@ -1,0 +1,59 @@
+database_url: postgresql+psycopg2://traffic:traffic@127.0.0.1:5433/traffic
+
+paths:
+  aic21_root: "../AIC21_Track1_Vehicle_Counting"
+  data_dir: "data"
+  experiments_dir: "experiments"
+  checkpoints_dir: "checkpoints"
+
+video:
+  model: "yolov8n.pt"
+  confidence: 0.25
+  iou: 0.5
+  # COCO: car, motorcycle, bus, truck
+  classes: [2, 3, 5, 7]
+  min_inside_frames: 5
+  turn_threshold_deg: 35
+  imgsz: 640
+  sample_video: "../AIC21_Track1_Vehicle_Counting/counting_gt_sample/counting_example_cam_5_1min.mp4"
+  sample_gt: "../AIC21_Track1_Vehicle_Counting/counting_gt_sample/counting_example_cam_5_1min.csv"
+
+# Four approaches of cam_5. Angle is atan2(dy, dx) of the entry point
+# relative to the ROI centroid, degrees, image y axis pointing down.
+cameras:
+  cam_5:
+    roi: "../AIC21_Track1_Vehicle_Counting/ROIs/cam_5.txt"
+    approaches:
+      - {angle: 180, right: 1, through: 2, left: 3}
+      - {angle: -90, right: 4, through: 5, left: 6}
+      - {angle: 0, right: 7, through: 8, left: 9}
+      - {angle: 90, right: 10, through: 11, left: 12}
+
+forecast:
+  dataset: metr-la
+  history: 12
+  horizons: [3, 6, 12]
+  step_minutes: 5
+  hidden: 16
+  dropout: 0.1
+  batch_size: 64
+  epochs: 10
+  lr: 0.001
+  max_nodes: 32
+  train_stride: 12
+  max_train_windows: 2500
+  max_eval_windows: 600
+  latitude: 34.0522
+  longitude: -118.2437
+  train_ratio: 0.7
+  val_ratio: 0.1
+  congestion_free: 0.7
+  congestion_moderate: 0.4
+  distance_sigma_m: 1000
+  distance_epsilon: 0.1
+  h5_url: "https://raw.githubusercontent.com/leilin-research/GCGRNN/master/data/METR-LA_traffic_speed/metr-la.h5"
+  locations_url: "https://raw.githubusercontent.com/liyaguang/DCRNN/master/data/sensor_graph/graph_sensor_locations.csv"
+  distances_url: "https://raw.githubusercontent.com/liyaguang/DCRNN/master/data/sensor_graph/distances_la_2012.csv"
+
+weather:
+  timezone: "UTC"
